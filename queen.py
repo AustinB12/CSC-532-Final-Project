@@ -8,3 +8,6 @@ class Queen:
 
     def set_col(self, col_value):
         self.col = col_value
+
+    def print(self):
+        print(f"Queen at row {self.row} and column {self.col}")
