@@ -1,103 +1,85 @@
 import random
-import copy
-from board import Board
-from queen import Queen
+import time
+
+
+def random_board_generator(n):
+    """Generates a random board configuration for n queens."""
+    board = list(range(n))
+    random.shuffle(board)
+    return board
 
 
 def heuristic_func(board):
-    curr_cost = 0
-    queens = board.queens
-    n_queens = len(queens)
-    for i in range(n_queens):
-        r1 = queens[i].row
-        c1 = queens[i].col
-        for j in range(i+1, n_queens):
-            r2 = queens[j].row
-            c2 = queens[j].col
-            if r1 == r2 or c1 == c2 or abs(r1 - r2) == abs(c1 - c2):
-                curr_cost += 1
-    return curr_cost
+    """Calculates the number of pairs of queens that are attacking each other."""
+    n = len(board)
+    current_cost = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if board[i] == board[j] or abs(board[i] - board[j]) == abs(i - j):
+                current_cost += 1
+    return current_cost
 
 
-def hill_climbing(board, max_iterations):
-    current_board = board
+def next_board_simple_hill_climbing(board):
+    """Finds a neighboring board with a lower heuristic value and checks for solution."""
+    n = len(board)
+    current_cost = heuristic_func(board)
+    for col in range(n):
+        original_row = board[col]
+        # Try each possible row
+        for new_row in range(n):
+            if new_row == original_row:
+                continue  # Skip if it's the original position
+            board[col] = new_row
+            new_cost = heuristic_func(board)
+            if new_cost == 0:
+                return board, new_cost  # Return immediately if a solution is found
+            if new_cost < current_cost:
+                return board, new_cost  # Return a better state
+            board[col] = original_row  # Revert if no improvement
+    return board, current_cost  # Return the same board if no better neighbor is found
 
-    current_conflicts = heuristic_func(board)
 
-    for _ in range(max_iterations):
-        if current_conflicts == 0:
-            print("Solution found!")
-            return current_board
-
-        # pick a random queen
-        queens = current_board.queens
-        random_queen_index = random.randint(0, len(current_board.queens) - 1)
-
-        random_queen = queens[random_queen_index]
-
-        best_board_step = None
-        best_step_conflicts = None
-        # Move the queen to the lowest conflict position within a radius of 1 of its original location
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if i == 0 and j == 0:
-                    continue
-
-                new_row = random_queen.row + i
-                new_col = random_queen.col + j
-
-                if new_row < 0 or new_row >= current_board.size or new_col < 0 or new_col >= current_board.size:
-                    continue
-
-                new_board = copy.deepcopy(current_board)
-                new_queen = Queen(new_row, new_col)
-                new_board.queens[random_queen_index] = new_queen
-
-                new_conflicts = heuristic_func(new_board)
-
-                if new_conflicts < current_conflicts:
-                    best_board_step = new_board
-                    best_step_conflicts = new_conflicts
-        if best_board_step is None:
-            print("Local minimum found.")
-        elif best_step_conflicts < current_conflicts:
-            current_board = best_board_step
-            current_conflicts = best_step_conflicts
-            print("Found better position for queen with less conflicts:",
-                  current_conflicts, best_step_conflicts)
-
-            print("==========")
-            board.print()
-            print("==========")
-            best_board_step.print()
-            print("==========")
-
-    return current_board
+def print_chess_board(board):
+    """Prints the board."""
+    n = len(board)
+    print("\n")
+    for i in range(n):
+        row = ['_'] * n
+        row[board[i]] = 'Q'
+        print('|' + '|'.join(row) + '|')
 
 
 def main():
-    board_size = 8
-    max_iterations = 100
-    max_restarts = 100
-    num_of_queens = 8
+    n_queens = 8
+    if n_queens <= 3 and n_queens != 1:
+        print("No arrangement is possible")
+        return
 
-    queens = []
-    for _ in range(num_of_queens):
-        row = random.randint(0, board_size - 1)
-        col = random.randint(0, board_size - 1)
-        curr_queen = Queen(row, col)
-        queens.append(curr_queen)
+    max_instance = 100
+    instance = 0
+    solution_found = False
 
-    board = Board(board_size, queens)
-    board2 = hill_climbing(board, max_iterations)
+    start_time = time.time()
+    while instance < max_instance:
+        instance += 1
+        board = random_board_generator(n_queens)
+        print_chess_board(board)
+        current_cost = heuristic_func(board)
 
-    print("Initial board:")
-    board.print()
-    print("Final board:")
-    board2.print()
+        while True:
+            board, new_cost = next_board_simple_hill_climbing(board)
+            if new_cost == 0 or new_cost >= current_cost:  # Check for solution or no improvement
+                break
+            current_cost = new_cost
 
-    print("Initial conflicts:", heuristic_func(board),
-          "Final conflicts:", heuristic_func(board2))
+        if new_cost == 0:  # Solution found
+            print("\nOne Possible Solution:")
+            print_chess_board(board)
+            break
+
+    print(f"\nRuntime: {time.time() - start_time:.2f} seconds")
 
 
-main()
+if __name__ == "__main__":
+    main()

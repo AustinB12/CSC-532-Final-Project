@@ -16,6 +16,14 @@ class Board:
                 # Flip spot from 0 to 1, to indicate a Queen occupies the location
                 self.board[queen.row][queen.col] = 1
 
+    def update_board(self):
+        # Reset the board
+        self.board = [[0]*self.size for _ in range(self.size)]
+
+        # Update the board with the current positions of the queens
+        for queen in self.queens:
+            self.board[queen.row][queen.col] = 1
+
     def cost(self):
         total_moves = 0
 
