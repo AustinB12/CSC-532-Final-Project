@@ -1,84 +1,67 @@
-import random
+# compare_hill_climbing.py
+from nQueensHillClimbingFunctions import random_board_generator, hill_climbing, print_chess_board
 import time
+import multiprocessing
+from tqdm import tqdm
 
 
-def random_board_generator(n):
-    """Generates a random board configuration for n queens."""
-    board = list(range(n))
-    random.shuffle(board)
-    return board
+def run_single_core_hill_climbing(n_queens, num_iterations):
+    results = []
+    for _ in tqdm(range(num_iterations), desc="Single-core Progress"):
+        start_board = random_board_generator(n_queens)
+        start_time = time.perf_counter()
+        board, cost, found_solution, steps = hill_climbing(start_board)
+        duration = time.perf_counter() - start_time
+        results.append((duration, found_solution, steps))
+    return results
 
 
-def heuristic_func(board):
-    """Calculates the number of pairs of queens that are attacking each other."""
-    n = len(board)
-    current_cost = 0
-    for i in range(n):
-        for j in range(i + 1, n):
-            if board[i] == board[j] or abs(board[i] - board[j]) == abs(i - j):
-                current_cost += 1
-    return current_cost
+def run_multi_core_hill_climbing(n_queens, num_iterations):
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    start_time = time.perf_counter()
+    async_results = [pool.apply_async(hill_climbing, (random_board_generator(
+        n_queens),)) for _ in tqdm(range(num_iterations), desc="Multi-core Progress")]
+    pool.close()
+    pool.join()
+    end_time = time.perf_counter()
+    results = [result.get() for result in async_results]
+    total_duration = end_time - start_time
+    return [(total_duration / num_iterations, found_solution, steps) for (board, cost, found_solution, steps) in results]
 
 
-def next_board_simple_hill_climbing(board):
-    """Finds a neighboring board with a lower heuristic value and checks for solution."""
-    n = len(board)
-    current_cost = heuristic_func(board)
-    for col in range(n):
-        original_row = board[col]
-        # Try each possible row
-        for new_row in range(n):
-            if new_row == original_row:
-                continue  # Skip if it's the original position
-            board[col] = new_row
-            new_cost = heuristic_func(board)
-            if new_cost == 0:
-                return board, new_cost  # Return immediately if a solution is found
-            if new_cost < current_cost:
-                return board, new_cost  # Return a better state
-            board[col] = original_row  # Revert if no improvement
-    return board, current_cost  # Return the same board if no better neighbor is found
-
-
-def print_chess_board(board):
-    """Prints the board."""
-    n = len(board)
-    print("\n")
-    for i in range(n):
-        row = ['_'] * n
-        row[board[i]] = 'Q'
-        print('|' + '|'.join(row) + '|')
+def analyze_results(results):
+    durations = [result[0] for result in results]
+    successes = [1 for result in results if result[1]]
+    steps = [result[2] for result in results if result[1]]
+    average_duration = sum(durations) / len(results) if durations else 0
+    success_rate = (len(successes) / len(results)) * 100 if results else 0
+    average_steps = sum(steps) / len(successes) if successes else 0
+    return average_duration, success_rate, average_steps
 
 
 def main():
-    n_queens = 8
-    if n_queens <= 3 and n_queens != 1:
-        print("No arrangement is possible")
-        return
+    n_queens = 16
+    num_boards = 10000  # Number of different configurations to try
 
-    max_instance = 100
-    instance = 0
-    solution_found = False
+    # Measure total time for single-core processing
+    start_time = time.perf_counter()
+    print("Starting Single-Core Hill Climbing...")
+    single_results = run_single_core_hill_climbing(n_queens, num_boards)
+    single_duration, single_success_rate, single_steps = analyze_results(
+        single_results)
+    total_single_duration = time.perf_counter() - start_time
+    print(f"Single-Core - Total Duration: {total_single_duration} seconds, Average Duration: {
+          single_duration} seconds, Success Rate: {single_success_rate}, Average Steps: {single_steps}")
 
-    start_time = time.time()
-    while instance < max_instance:
-        instance += 1
-        board = random_board_generator(n_queens)
-        print_chess_board(board)
-        current_cost = heuristic_func(board)
-
-        while True:
-            board, new_cost = next_board_simple_hill_climbing(board)
-            if new_cost == 0 or new_cost >= current_cost:  # Check for solution or no improvement
-                break
-            current_cost = new_cost
-
-        if new_cost == 0:  # Solution found
-            print("\nOne Possible Solution:")
-            print_chess_board(board)
-            break
-
-    print(f"\nRuntime: {time.time() - start_time:.2f} seconds")
+    # Measure total time for multi-core processing
+    start_time = time.perf_counter()
+    print("Starting Multi-Core Hill Climbing...")
+    multi_results = run_multi_core_hill_climbing(n_queens, num_boards)
+    multi_duration, multi_success_rate, multi_steps = analyze_results(
+        multi_results)
+    total_multi_duration = time.perf_counter() - start_time
+    print(f"Multi-Core - Total Duration: {total_multi_duration} seconds, Average Duration: {
+          multi_duration} seconds, Success Rate: {multi_success_rate}, Average Steps: {multi_steps}")
 
 
 if __name__ == "__main__":
