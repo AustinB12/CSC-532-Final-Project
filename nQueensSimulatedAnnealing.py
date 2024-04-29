@@ -59,36 +59,41 @@ def simulated_annealing(board, max_iterations, initial_temperature, cooling_rate
     return current_board
 
 
-# Example usage:
-n = 5  # Board size
-max_iterations = 1000
+# Constants:
+max_iterations = 10000000000
 initial_temperature = 1000.0
 cooling_rate = 0.95
 
-queens = []
+for game_size in range(10, 21):
+    
+    times = []
+    
+    for iteration in range(50):
+        available_cols = [i for i in range(game_size)]
 
-num_of_queens = 4
+        queens = []
 
-available_cols = [i for i in range(n)]
+        for row_value in range(game_size):
+            # Choose a col to put it in
+            picked_col = random.choice(available_cols)
 
-for i in range(num_of_queens):
-    picked_col = random.choice(available_cols)
-    curr_queen = Queen(i, picked_col)
+            curr_queen = Queen(row_value, picked_col)
+            queens.append(curr_queen)
+            available_cols.remove(picked_col)
 
-    queens.append(curr_queen)
+        # Create our game board
+        b = Board(game_size, queens)
 
-    available_cols.remove(picked_col)
+        # print("START")
+        # b.print()
 
-b = Board(n, queens)
+        start_time = time.perf_counter()
+        solution = simulated_annealing(b, max_iterations, initial_temperature, cooling_rate)
+        end_time = time.perf_counter()
+        
+        times.append(end_time - start_time)
 
-print("START")
-b.print()
-
-start = time.perf_counter()
-solution = simulated_annealing(b, max_iterations, initial_temperature, cooling_rate)
-end = time.perf_counter()
-
-
-print("END")
-solution.print()
-print("Time: ", end - start)
+    # print("END")
+    # solution.print()
+    print(f"{game_size}\t{sum(times)/len(times)}\t{"Solved" if solution.cost() == 0 else "Unsolved"}")
+    times = []
