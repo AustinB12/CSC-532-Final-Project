@@ -6,6 +6,11 @@ import multiprocessing as mp
 from board import Board
 from queen import Queen
 
+max_iterations = 10000000000
+initial_temperature = 1000.0
+cooling_rate = 0.95
+number_of_solutions_to_try = 6
+
 
 def acceptance_probability(old_cost, new_cost, temperature):
     """Calculate the acceptance probability based on the cost difference and temperature."""
@@ -15,7 +20,7 @@ def acceptance_probability(old_cost, new_cost, temperature):
         return math.exp((old_cost - new_cost) / temperature)
 
 
-def solve_puzzle(board, max_iterations, initial_temperature, cooling_rate):
+def solve_puzzle(board):
     """Solve the n-queens problem using simulated annealing."""
     current_board = board
     current_cost = current_board.cost()
@@ -54,25 +59,43 @@ def generate_random_board(size):
     return Board(size, queens)
 
 
-def simulated_annealing(size):
+def simulated_annealing_single(size):
     # Constants:
     max_iterations = 10000000000
     initial_temperature = 1000.0
     cooling_rate = 0.95
 
-    boards = [generate_random_board(size) for _ in range(5)]
+    boards = [generate_random_board(size) for _ in range(number_of_solutions_to_try)]
 
     times = []
+    start_time = time.perf_counter()
     for board in boards:
-        start_time = time.perf_counter()
 
-        result = solve_puzzle(board, max_iterations, initial_temperature, cooling_rate)
+        solve_puzzle(board)
 
-        end_time = time.perf_counter()
+        # times.append(end_time - start_time)
+    end_time = time.perf_counter()
 
-        times.append(end_time - start_time)
+    print(f"Total Time for {size} queens: {end_time - start_time}")
 
-    return sum(times) / len(times)
+def simulated_annealing_multi(size):
+    # Constants:
+    max_iterations = 10000000000
+    initial_temperature = 1000.0
+    cooling_rate = 0.95
+
+    boards = [generate_random_board(size) for _ in range(number_of_solutions_to_try)]
+
+    total_start = time.perf_counter()
+    with mp.Pool() as pool:
+        results = pool.map(solve_puzzle, boards)
+
+        # curr = 10
+        # for i in results:
+        #     print(f"Size: {curr}\tCost: {i.cost()}")
+        #     curr += 1
+    total_end = time.perf_counter()
+    print(f"Total Time for {size} queens: {total_end - total_start}")
 
 
 def main():
@@ -82,42 +105,9 @@ def main():
     cooling_rate = 0.95
 
 
-    # ======== Multiprocessor ========
-    # total_start = time.perf_counter()
-    # with mp.Pool() as pool:
-    #     results = pool.map(simulated_annealing, range(10, 15))
-
-    #     curr = 10
-    #     for i in results:
-    #         print(f"Size: {curr}\tTime: {i}")
-    #         curr += 1
-    # total_end = time.perf_counter()
-    # print(f"Total Time: {total_end - total_start}")
-    # ======== Multiprocessor ========
-
-    # ======== Single Process ========
-    total_start = time.perf_counter()
-    for game_size in range(10, 15):
-
-        times = []
-
-        boards = [
-                generate_random_board(game_size)
-            for _ in range(5)
-        ]
-
-        for b in boards:
-            start_time = time.perf_counter()
-            solve_puzzle(b, max_iterations, initial_temperature, cooling_rate)
-            end_time = time.perf_counter()
-
-            times.append(end_time - start_time)
-
-        print(f"{game_size}\t{sum(times)/len(times)}")
-        times = []
-    total_end = time.perf_counter()
-    print(f"Total Time: {total_end - total_start}")
-    # ======== Single Process ========
+    for i in range(10, 16):
+        # simulated_annealing_single(i)
+        simulated_annealing_multi(i)
 
 
 if __name__ == "__main__":
