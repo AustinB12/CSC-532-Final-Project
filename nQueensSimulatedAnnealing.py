@@ -60,7 +60,7 @@ def simulated_annealing(size):
     initial_temperature = 1000.0
     cooling_rate = 0.95
 
-    boards = [generate_random_board(size) for _ in range(10)]
+    boards = [generate_random_board(size) for _ in range(5)]
 
     times = []
     for board in boards:
@@ -81,43 +81,44 @@ def main():
     initial_temperature = 1000.0
     cooling_rate = 0.95
 
-    for game_size in range(10, 21):
+
+    # ======== Multiprocessor ========
+    # total_start = time.perf_counter()
+    # with mp.Pool() as pool:
+    #     results = pool.map(simulated_annealing, range(10, 15))
+
+    #     curr = 10
+    #     for i in results:
+    #         print(f"Size: {curr}\tTime: {i}")
+    #         curr += 1
+    # total_end = time.perf_counter()
+    # print(f"Total Time: {total_end - total_start}")
+    # ======== Multiprocessor ========
+
+    # ======== Single Process ========
+    total_start = time.perf_counter()
+    for game_size in range(10, 15):
 
         times = []
 
         boards = [
-            [
-                generate_random_board(game_size),
-                max_iterations,
-                initial_temperature,
-                cooling_rate,
-            ]
+                generate_random_board(game_size)
             for _ in range(5)
         ]
 
-        start_time = time.perf_counter()
-        with mp.Pool() as pool:
-            results = pool.map(solve_puzzle, boards)
+        for b in boards:
+            start_time = time.perf_counter()
+            solve_puzzle(b, max_iterations, initial_temperature, cooling_rate)
+            end_time = time.perf_counter()
 
-            for i in results:
-                i.print()
+            times.append(end_time - start_time)
 
-        # p = mp.Process(
-        #     target=solve_puzzle,
-        #     args=(b, max_iterations, initial_temperature, cooling_rate),
-        # )
-        # p.start()
-        # solve_puzzle(b, max_iterations, initial_temperature, cooling_rate)
-        end_time = time.perf_counter()
-
-        times.append(end_time - start_time)
-
-        # print("END")
-        # solution.print()
         print(f"{game_size}\t{sum(times)/len(times)}")
         times = []
+    total_end = time.perf_counter()
+    print(f"Total Time: {total_end - total_start}")
+    # ======== Single Process ========
 
 
 if __name__ == "__main__":
-    mp.freeze_support()
     main()
