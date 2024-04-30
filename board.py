@@ -18,7 +18,7 @@ class Board:
 
     def update_board(self):
         # Reset the board
-        self.board = [[0]*self.size for _ in range(self.size)]
+        self.board = [[0] * self.size for _ in range(self.size)]
 
         # Update the board with the current positions of the queens
         for queen in self.queens:
@@ -79,15 +79,6 @@ class Board:
         # Add new queen with new coordinates
         new_queens.append(Queen(new_row, new_col))
 
-        # # Reset board queens
-        # self.queens = new_queens
-
-        # self.board = np.zeros((self.size, self.size), dtype=int)
-        # for queen in self.queens:
-        #     # Flip spot from 0 to 1, to indicate a Queen occupies the location
-        #     self.board[queen.row][queen.col] = 1
-
-        # return new board
         return Board(self.size, new_queens)
 
     def print(self):
