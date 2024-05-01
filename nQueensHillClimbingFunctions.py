@@ -1,7 +1,5 @@
-# hill_climbing_functions.py
 import random
 import time
-import multiprocessing
 
 
 def random_board_generator(n):
@@ -46,8 +44,41 @@ def hill_climbing(start_board):
             board)
         steps += 1
         if new_cost == 0 or new_cost >= current_cost:
-            return board, new_cost, found_solution, steps
+            return (found_solution, steps, current_cost)
         current_cost = new_cost
+
+
+def evaluate_move(board, col, new_row, original_row):
+    new_board = board[:]
+    new_board[col] = new_row
+    new_cost = heuristic_func(new_board)
+    if new_cost == 0:
+        return (new_board, new_cost, True)
+    return (new_board, new_cost, False)
+
+
+def parallel_hill_climbing(start_board, pool):
+    board = start_board[:]
+    steps = 0
+    current_cost = heuristic_func(board)
+    while True:
+        found_better = False
+        args = [(board, col, new_row, board[col])
+                for col in range(len(board))
+                for new_row in range(len(board))
+                if new_row != board[col]]
+        results = pool.starmap(evaluate_move, args)
+        for new_board, new_cost, found_solution in results:
+            if found_solution:
+                return new_board, new_cost, found_solution, steps + 1
+            elif new_cost < current_cost:
+                board = new_board
+                current_cost = new_cost
+                found_better = True
+                break
+        steps += 1
+        if not found_better:
+            return board, current_cost, False, steps
 
 
 def print_chess_board(board):
